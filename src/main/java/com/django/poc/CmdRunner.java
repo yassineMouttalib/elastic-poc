@@ -3,7 +3,7 @@ package com.django.poc;
 import com.django.poc.config.RestClientConfigHero;
 //import com.django.poc.service.DjangoFolderImportService;
 //import com.django.poc.service.DjangoSearchService;
-import com.django.poc.service.hero.HeroBuilder;
+import com.django.poc.security.DisableSSLVerification;
 import com.django.poc.service.hero.HeroSearchService;
 
 import org.slf4j.Logger;
@@ -43,6 +43,7 @@ public class CmdRunner implements CommandLineRunner {
 //        djangoSearchService.searchDocument("addToRemovableTypesIfExisting removableTypes");
 //        logger.info(separator);
         //HeroBuilder.insertData(restClientConfigHero);
-        heroSearchService.searchDocument("Superman");
+//        heroSearchService.searchDocument("Superman");
+        heroSearchService.seachData();
     }
 }

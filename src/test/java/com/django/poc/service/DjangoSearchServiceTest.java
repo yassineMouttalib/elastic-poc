@@ -1,7 +1,7 @@
 //package com.django.poc.service;
 //
 //import co.elastic.clients.elasticsearch.core.search.Hit;
-//import com.django.poc.DisableSSLVerification;
+//import com.django.poc.security.DisableSSLVerification;
 //import com.django.poc.config.RestClientConfig;
 //import com.django.poc.model.DjangoFile;
 //import org.junit.jupiter.api.Test;
