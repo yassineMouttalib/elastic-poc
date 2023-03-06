@@ -1,8 +1,6 @@
 package com.django.poc.config;//package com.django.poc.config;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
-//import co.elastic.clients.elasticsearch._helpers.bulk.BulkIngester;
-//import co.elastic.clients.elasticsearch._helpers.bulk.BulkListener;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.BulkResponse;
 import co.elastic.clients.elasticsearch.core.IndexRequest;
@@ -13,7 +11,6 @@ import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.ElasticsearchTransport;
 import co.elastic.clients.transport.endpoints.BooleanResponse;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
-//import co.elastic.clients.util.BinaryData;
 import com.django.poc.model.DjangoFile;
 import jakarta.json.Json;
 import jakarta.json.JsonObject;
@@ -51,7 +48,6 @@ public class RestClientConfigDjango {
     public static final int TIMEOUT = 600000;
 //    BulkIngester<String> ingester;
     ElasticsearchTransport transport;
-//    BulkListener<String> listener;
 BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
 
     public RestClientConfigDjango() {
@@ -85,40 +81,6 @@ BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
             }
             client.indices().putSettings(a -> a.settings(b -> b.otherSettings(TOTAL_FIELDS_LIMIT_NAME,
                     JsonData.of(TOTAL_FIELDS_LIMIT))));
-//            listener = new BulkListener<String>() {
-//                @Override
-//                public void beforeBulk(long executionId, BulkRequest request, List<String> contexts) {
-//                }
-//
-//                @Override
-//                public void afterBulk(long executionId, BulkRequest request, List<String> contexts, BulkResponse response) {
-//                    // The request was accepted, but may contain failed items.
-//                    // The "context" list gives the file name for each bulk item.
-//                    logger.debug("Bulk request " + executionId + " completed");
-//                    for (int i = 0; i < contexts.size(); i++) {
-//                        BulkResponseItem item = response.items().get(i);
-//                        if (item.error() != null) {
-//                            // Inspect the failure cause
-//                            logger.error("Failed to index file " + contexts.get(i) + " - " + item.error().reason());
-//                            logger.error("Failed to index file " + contexts.get(i) + " - " + item.error().stackTrace());
-//                            logger.error("Failed to index file " + contexts.get(i) + " - " + item.error().causedBy());
-//                        }
-//                    }
-//                }
-//
-//                @Override
-//                public void afterBulk(long executionId, BulkRequest request, List<String> contexts, Throwable failure) {
-//                    // The request could not be sent
-//                    logger.debug("Bulk request " + executionId + " failed", failure);
-//                }
-//            };
-//
-//            ingester = BulkIngester.of(b -> b
-//                    .client(client)    // <1>
-//                    .maxOperations(10)  // <2>
-//                    .flushInterval(1, TimeUnit.SECONDS)
-//                    .listener(listener)
-//            );
         } catch (Exception e) {
             e.printStackTrace();
             System.exit(0);
@@ -157,8 +119,6 @@ BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
     }
 
     public void addBulkOperation(DjangoFile djangoFile) throws IOException, InterruptedException {
-//        var jsonReader = Json.createReader(new StringReader(djangoFile.toString()));
-//        var messageAsJson = jsonReader.readObject();
         JsonObject json = Json.createObjectBuilder()
                 .add(ID, djangoFile.getId())
                 .add(FILE_NAME, djangoFile.getFileName())
@@ -168,17 +128,7 @@ BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
                 .add(CREATION_TIME, djangoFile.getCreationTime())
                 .add(LAST_MODIFIED_TIME, djangoFile.getLastModifiedTime())
                 .build();
-//        BulkOperation.Builder builder = new BulkOperation.Builder();
-//        BulkOperation bulkOperation = builder.create(b -> b.document(json).id(djangoFile.getId())).build();
-//        BinaryData data = BinaryData.of(IOUtils.toByteArray(json.toString()));
-//        ingester.add(op -> op
-//                .index(idx -> idx
-//                        .index(CUSTOM_INDEX)
-//                        .id(djangoFile.getId().toString())
-//                        .document(data)
-//                )
-//        );
-//
+
         bulkRequestBuilder.operations(op -> op
                 .index(idx -> idx
                         .index(CUSTOM_INDEX)
@@ -190,28 +140,6 @@ BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
 
     public ElasticsearchClient getClient() {
         return client;
-    }
-
-    public void deleteDocument(String index, String idDocument) {
-//
-//        try {
-//            //Delete the document
-//            client.delete(b -> b.index(index).id(idDocument));
-//
-//            // Delete the index
-//            DeleteRequest deleteRequest = new DeleteRequest.Builder().index(index).build();
-//            DeleteResponse deleteResponse = client.indices().delete(deleteRequest);
-//        } catch (IOException e) {
-//            throw new RuntimeException(e);
-//        } finally {
-//            try {
-//                if (restClient != null) {
-//                    restClient.close();
-//                }
-//            } catch (IOException e) {
-//                e.printStackTrace();
-//            }
-//        }
     }
 
     private HttpHeaders getHeader() {

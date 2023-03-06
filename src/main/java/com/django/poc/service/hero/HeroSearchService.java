@@ -10,15 +10,19 @@ import co.elastic.clients.json.JsonData;
 import com.django.poc.config.RestClientConfigHero;
 import com.django.poc.model.jsonmodel.SuperHeroJsonModel;
 import com.django.poc.security.SecurityConfig;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.json.Json;
-import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonReader;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -36,6 +40,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class HeroSearchService {
+    public static final String JSON_TEMPLATE_PATH = "src/main/resources/q1.json";
     Logger logger = LoggerFactory.getLogger(this.getClass());
     private final ElasticsearchClient client;
     RestClientConfigHero restClientConfigHero;
@@ -51,11 +56,7 @@ public class HeroSearchService {
     public SuperHeroJsonModel getDocument(String fileId) {
         SuperHeroJsonModel superHeroJsonModel = null;
         try {
-            GetResponse<SuperHeroJsonModel> response = client.get(g -> g
-                            .index(restClientConfigHero.CUSTOM_INDEX)
-                            .id(fileId),
-                    SuperHeroJsonModel.class
-            );
+            GetResponse<SuperHeroJsonModel> response = client.get(g -> g.index(restClientConfigHero.CUSTOM_INDEX).id(fileId), SuperHeroJsonModel.class);
 
             if (response.found()) {
                 superHeroJsonModel = response.source();
@@ -69,50 +70,14 @@ public class HeroSearchService {
         }
         return superHeroJsonModel;
     }
-//    SearchRequest searchRequest = new SearchRequest.
-
-//    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
-//searchSourceBuilder.query(QueryBuilders.boolQuery()
-//        .should(QueryBuilders.matchQuery("name", "Superman"))
-//            .should(QueryBuilders.nestedQuery("powers", QueryBuilders.matchQuery("powers.description", "Superman"), ScoreMode.None))
-//            );
-//searchSourceBuilder.fetchSource(new String[] {"name", "description", "powers.description"}, null);
-//
-//searchRequest.source(searchSourceBuilder);
 
     public List<Hit<SuperHeroJsonModel>> searchDocument(String searchText) {
 
-//        Query byName = MatchQuery.of(m -> m
-//                .field("name")
-//                .query(searchText)
-//        )._toQuery();
-//        Query byPower= MatchQuery.of(m -> m
-//                .field("powers")
-//                .query(searchText)
-//        )._toQuery();
-//
-//        NestedQuery nestedQuery = NestedQuery.of(a -> a.query( q ->q.));
-//        BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
         List<Hit<SuperHeroJsonModel>> hits;
         try {
-            SearchResponse<SuperHeroJsonModel> response = client.search(s -> s
-                            .index(RestClientConfigHero.CUSTOM_INDEX)
-//                            .highlight(h -> h.highlightQuery(a -> a.match(v -> v.field("*").query(searchText))))
-//                            .highlight(h -> h.highlightQuery(q -> q.match(m -> m.field("*").query(searchText))))
-                            //.highlight(h -> h.fields(searchText, f -> f.matchedFields("*")))
-                            .query(q -> q
-                                            .matchAll(f -> f.queryName(searchText))
-//                                    .bool(b -> b.must(m -> m.matchAll(a -> a.queryName(searchText))))
-//                                    .match(t -> t
-//                                            .field("name")
-//                                            .query(searchText)
-//                                    )
-                            )
-//                            .highlight(h -> h.highlightQuery(q -> q.matchAll(m -> m.queryName(searchText))))
-//                            .highlight(h -> h.fields("*", f -> f.matchedFields("*")))
-                    ,
-                    SuperHeroJsonModel.class
-            );
+            SearchResponse<SuperHeroJsonModel> response = client.search(s -> s.index(RestClientConfigHero.CUSTOM_INDEX).query(q -> q.matchAll(f -> f.queryName(searchText)))
+
+                    , SuperHeroJsonModel.class);
             TotalHits total = response.hits().total();
             boolean isExactResult = total.relation() == TotalHitsRelation.Eq;
 
@@ -153,37 +118,30 @@ public class HeroSearchService {
     }
 
 
-    public void seachData() throws IOException {
-        String url = "https://localhost:9200/django-core/_search?pretty=true&q=Superman";
-        String json = """
-                {
-                  "query": {
-                    "multi_match": {
-                      "query": "Superman",
-                      "fields": ["*"]
-                    }
-                  },
-                  "_source": true,
-                  "highlight": {
-                    "fields": {
-                      "*": {}
-                    },
-                    "pre_tags": ["<mark>"],
-                    "post_tags": ["</mark>"]
-                  }
-                }""";
+    public void seachData(String query) throws IOException {
+        String url = "https://localhost:9200/django-core/_search?pretty=true&q=".concat(query);
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode root = mapper.readTree(new File(JSON_TEMPLATE_PATH));
+
+        // Replace "Superman" with query in the JSON object
+        ObjectNode multiMatch = (ObjectNode) root.path("query").path("multi_match");
+        String originalQuery = multiMatch.path("query").asText();
+        String updatedQuery = originalQuery.replace("Superman", query);
+        multiMatch.put("query", updatedQuery);
+
         // Create an HttpClient instance that ignores SSL certificate validation
         try (CloseableHttpClient httpClient = HttpClients.custom().setSSLSocketFactory(securityConfig.getSSLConnectionSocket())
                 .setDefaultCredentialsProvider(securityConfig.getProvider()).build()) {
 
-            HttpEntity entity = new StringEntity(json, ContentType.APPLICATION_JSON);
+            HttpEntity entity = new StringEntity(root.toString(), ContentType.APPLICATION_JSON);
             HttpPost request = new HttpPost(url);
             request.setEntity(entity);
+            Long consumedTime = System.currentTimeMillis();
             CloseableHttpResponse response = httpClient.execute(request);
-
+            logger.info("searching server made {} milliseconds to get receive Data",
+                    String.valueOf(System.currentTimeMillis() - consumedTime));
             // Extract the response body
             HttpEntity entityResponse = response.getEntity();
-//            String responseBody = EntityUtils.toString(entityResponse);
             if (entity != null) {
                 InputStream inputStream = null;
                 JsonReader jsonReader = null;
@@ -191,27 +149,17 @@ public class HeroSearchService {
                     inputStream = entityResponse.getContent();
                     jsonReader = Json.createReader(inputStream);
                     JsonObject jsonResponse = jsonReader.readObject();
-                    JsonArray hits = jsonResponse.getJsonObject("hits").getJsonArray("hits");
-
-                    for (int i = 0; i < hits.size(); i++) {
-                        JsonObject hit = hits.getJsonObject(i);
-                        String id = hit.getString("_id");
-                        String name = hit.getJsonObject("_source").getString("name");
-
-                        JsonObject highlight = hit.getJsonObject("highlight");
-                        for (String fieldName : highlight.keySet()) {
-                            JsonArray fragments = highlight.getJsonArray(fieldName);
-                            for (int j = 0; j < fragments.size(); j++) {
-                                String highlightedValue = fragments.getString(j);
-                                System.out.println("ID: " + id + ", Name: " + name + ", Highlighted Field: " + fieldName + ", Highlighted Value: " + highlightedValue);
-                            }
-                        }
-                    }
+                    StringBuilder fieldNames = new StringBuilder();
+                    ObjectMapper objectMapper = new ObjectMapper();
+                    JsonNode rootNode = objectMapper.readTree(jsonResponse.toString()).get("hits").get("hits");
+                    getFieldsContainingValue(rootNode, query, fieldNames, "");
+                    logger.info(fieldNames.toString());
+                    logger.info("request treated in {} milliseconds",
+                            String.valueOf(System.currentTimeMillis() - consumedTime));
                     response.close();
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 } finally {
-                    // close the InputStream and JsonReader manually
                     if (inputStream != null) {
                         inputStream.close();
                     }
@@ -227,4 +175,41 @@ public class HeroSearchService {
             throw new RuntimeException(e);
         }
     }
+
+    private static void getFieldsContainingValue(JsonNode node, String searchValue, StringBuilder fieldNames, String path) {
+
+        if (node.isObject()) {
+            Iterator<String> fieldNamesIterator = node.fieldNames();
+            while (fieldNamesIterator.hasNext()) {
+                String fieldName = fieldNamesIterator.next();
+                JsonNode fieldValueNode = node.get(fieldName);
+                if (fieldValueNode != null) {
+                    String fieldPath = path.isEmpty() ? fieldName : path + "." + fieldName;
+                    if (fieldValueNode.isContainerNode()) {
+                        getFieldsContainingValue(fieldValueNode, searchValue, fieldNames, fieldPath);
+                    } else if (fieldValueNode.isValueNode() && fieldValueNode.asText().toLowerCase().contains(searchValue.toLowerCase())) {
+                        fieldNames.append(fieldPath).append("\n");
+                    }
+                }
+            }
+        } else if (node.isArray()) {
+            for (int i = 0; i < node.size(); i++) {
+                JsonNode arrayElement = node.get(i);
+                String id = "";
+                if (arrayElement.has("_index")) {
+                    JsonNode nod = arrayElement.get("_source");
+                    String fieldFormat = "Hit: Id = %s in fields\n";
+                    fieldNames = fieldNames.append(String.format("Hit: Id = %s in fields\n", nod.get("id").asText()), 0, fieldFormat.length() - 1);
+                    getFieldsContainingValue(arrayElement.get("_source"), searchValue, fieldNames, path);
+                } else {
+                    if (arrayElement.has("id")) {
+                        id = arrayElement.get("id").asText();
+                        String elementPath = path.isEmpty() ? "[" + id + "]" : path + "[id=" + id + "]";
+                        getFieldsContainingValue(arrayElement, searchValue, fieldNames, elementPath);
+                    }
+                }
+            }
+        }
+    }
 }
+

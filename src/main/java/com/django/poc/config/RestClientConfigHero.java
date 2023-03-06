@@ -46,9 +46,7 @@ public class RestClientConfigHero {
     public static final String TOTAL_FIELDS_LIMIT = "4000";
     public static final String TOTAL_FIELDS_LIMIT_NAME = "index.mapping.total_fields.limit";
     public static final int TIMEOUT = 600000;
-    //    BulkIngester<String> ingester;
     ElasticsearchTransport transport;
-    //    BulkListener<String> listener;
     BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
 
     public RestClientConfigHero() {
@@ -82,40 +80,7 @@ public class RestClientConfigHero {
             }
             client.indices().putSettings(a -> a.settings(b -> b.otherSettings(TOTAL_FIELDS_LIMIT_NAME,
                     JsonData.of(TOTAL_FIELDS_LIMIT))));
-//            listener = new BulkListener<String>() {
-//                @Override
-//                public void beforeBulk(long executionId, BulkRequest request, List<String> contexts) {
-//                }
-//
-//                @Override
-//                public void afterBulk(long executionId, BulkRequest request, List<String> contexts, BulkResponse response) {
-//                    // The request was accepted, but may contain failed items.
-//                    // The "context" list gives the file name for each bulk item.
-//                    logger.debug("Bulk request " + executionId + " completed");
-//                    for (int i = 0; i < contexts.size(); i++) {
-//                        BulkResponseItem item = response.items().get(i);
-//                        if (item.error() != null) {
-//                            // Inspect the failure cause
-//                            logger.error("Failed to index file " + contexts.get(i) + " - " + item.error().reason());
-//                            logger.error("Failed to index file " + contexts.get(i) + " - " + item.error().stackTrace());
-//                            logger.error("Failed to index file " + contexts.get(i) + " - " + item.error().causedBy());
-//                        }
-//                    }
-//                }
-//
-//                @Override
-//                public void afterBulk(long executionId, BulkRequest request, List<String> contexts, Throwable failure) {
-//                    // The request could not be sent
-//                    logger.debug("Bulk request " + executionId + " failed", failure);
-//                }
-//            };
-//
-//            ingester = BulkIngester.of(b -> b
-//                    .client(client)    // <1>
-//                    .maxOperations(10)  // <2>
-//                    .flushInterval(1, TimeUnit.SECONDS)
-//                    .listener(listener)
-//            );
+
         } catch (Exception e) {
             e.printStackTrace();
             System.exit(0);
@@ -173,47 +138,4 @@ public class RestClientConfigHero {
     public ElasticsearchClient getClient() {
         return client;
     }
-
-    public void deleteDocument(String index, String idDocument) {
-//
-//        try {
-//            //Delete the document
-//            client.delete(b -> b.index(index).id(idDocument));
-//
-//            // Delete the index
-//            DeleteRequest deleteRequest = new DeleteRequest.Builder().index(index).build();
-//            DeleteResponse deleteResponse = client.indices().delete(deleteRequest);
-//        } catch (IOException e) {
-//            throw new RuntimeException(e);
-//        } finally {
-//            try {
-//                if (restClient != null) {
-//                    restClient.close();
-//                }
-//            } catch (IOException e) {
-//                e.printStackTrace();
-//            }
-//        }
-    }
-
-//    private HttpHeaders getHeader() {
-//        String plainCreds = "admin:admin";
-//        byte[] plainCredsBytes = plainCreds.getBytes();
-//        byte[] base64CredsBytes = Base64.encodeBase64(plainCredsBytes);
-//        String base64Creds = new String(base64CredsBytes);
-//
-//        HttpHeaders headers = new HttpHeaders();
-//        headers.add("Authorization", "Basic " + base64Creds);
-//        headers.add("Accept", "*/*");
-//        headers.add("Content-Type", "application/json");
-//
-//        return headers;
-//    }
-
-//    public static JsonData readJson(InputStream input, ElasticsearchClient esClient) {
-//        JsonpMapper jsonpMapper = esClient._transport().jsonpMapper();
-//        JsonProvider jsonProvider = jsonpMapper.jsonProvider();
-//
-//        return JsonData.from(jsonProvider.createParser(input), jsonpMapper);
-//    }
 }

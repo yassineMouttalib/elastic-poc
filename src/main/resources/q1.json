@@ -1,0 +1,22 @@
+{
+  "query": {
+    "multi_match": {
+      "query": "Superman",
+      "fields": [
+        "*"
+      ]
+    }
+  },
+  "_source": true,
+  "highlight": {
+    "fields": {
+      "*": {}
+    },
+    "pre_tags": [
+      "<mark>"
+    ],
+    "post_tags": [
+      "</mark>"
+    ]
+  }
+}

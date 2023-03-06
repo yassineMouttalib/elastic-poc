@@ -44,6 +44,6 @@ public class CmdRunner implements CommandLineRunner {
 //        logger.info(separator);
         //HeroBuilder.insertData(restClientConfigHero);
 //        heroSearchService.searchDocument("Superman");
-        heroSearchService.seachData();
+        heroSearchService.seachData("Superman");
     }
 }
