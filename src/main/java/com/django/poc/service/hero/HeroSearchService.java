@@ -22,9 +22,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -41,6 +43,10 @@ import org.springframework.stereotype.Component;
 @Component
 public class HeroSearchService {
     public static final String JSON_TEMPLATE_PATH = "src/main/resources/q1.json";
+    public static final String PATH = "path";
+    public static final String ID = "id";
+    public static final String ROOT_REF = "root_ref";
+    private static final String FIELD_FORMAT = "Hit: Id = %s in fields";
     Logger logger = LoggerFactory.getLogger(this.getClass());
     private final ElasticsearchClient client;
     RestClientConfigHero restClientConfigHero;
@@ -151,9 +157,11 @@ public class HeroSearchService {
                     JsonObject jsonResponse = jsonReader.readObject();
                     StringBuilder fieldNames = new StringBuilder();
                     ObjectMapper objectMapper = new ObjectMapper();
+                    TreeMap<String, List<String>> fieldsPrintMap = new TreeMap<>();
                     JsonNode rootNode = objectMapper.readTree(jsonResponse.toString()).get("hits").get("hits");
-                    getFieldsContainingValue(rootNode, query, fieldNames, "");
-                    logger.info(fieldNames.toString());
+//                  getFieldsContainingValue(rootNode, query, fieldNames, "");
+                    getFieldsContainingQueryRootRefModel(rootNode, query, fieldsPrintMap);
+                    printResultQuery(fieldsPrintMap);
                     logger.info("request treated in {} milliseconds",
                             String.valueOf(System.currentTimeMillis() - consumedTime));
                     response.close();
@@ -208,6 +216,54 @@ public class HeroSearchService {
                         getFieldsContainingValue(arrayElement, searchValue, fieldNames, elementPath);
                     }
                 }
+            }
+        }
+    }
+
+    private static void getFieldsContainingQueryRootRefModel(JsonNode node, String searchValue, TreeMap<String, List<String>> fieldsPrintMap) {
+        if (node.isObject()) {
+            if (!node.has("_index")) {
+                return;
+            }
+            JsonNode sourceNode = node.get("_source");
+            String res = "";
+
+            if (!sourceNode.get(PATH).asText().isEmpty()) {
+                res = String.format("%s[id=%s].", sourceNode.get(PATH).asText(), sourceNode.get(ID).asText());
+            }
+            Iterator<String> fieldNamesIterator = sourceNode.fieldNames();
+            while (fieldNamesIterator.hasNext()) {
+                String fieldName = fieldNamesIterator.next();
+                JsonNode fieldValueNode = sourceNode.get(fieldName);
+                if (fieldValueNode != null) {
+                    if (fieldValueNode.isContainerNode()) {
+                        getFieldsContainingQueryRootRefModel(fieldValueNode, searchValue, fieldsPrintMap);
+                    } else if (fieldValueNode.isValueNode() && fieldValueNode.asText().toLowerCase().contains(searchValue.toLowerCase())) {
+                        if (fieldsPrintMap.get(sourceNode.get(ROOT_REF).asText()) == null) {
+                            ArrayList list = new ArrayList();
+                            list.add(res.concat(fieldName));
+                            fieldsPrintMap.put(sourceNode.get(ROOT_REF).asText(), list);
+                        } else {
+                            List list = fieldsPrintMap.get(sourceNode.get(ROOT_REF).asText());
+                            list.add(res.concat(fieldName));
+                        }
+                    }
+                }
+            }
+
+        } else if (node.isArray()) {
+            for (int i = 0; i < node.size(); i++) {
+                getFieldsContainingQueryRootRefModel(node.get(i), searchValue, fieldsPrintMap);
+            }
+        }
+    }
+
+    private void printResultQuery(Map<String, List<String>> map) {
+        for (String key : map.keySet()) {
+            List<String> value = map.get(key);
+            logger.info(String.format(FIELD_FORMAT, key));
+            for (String s : value) {
+                logger.info("\t".concat(s));
             }
         }
     }

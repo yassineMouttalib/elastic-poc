@@ -1,0 +1,70 @@
+[{
+		"id": "1",
+		"type": "SuperHero",
+		"name": "Superman",
+		"description": "Superman is a well known super hero who can fly. Many movies have been done on him. He met Batman several times.",
+		"powers": [{
+				"id": "2",
+				"name": "Flying",
+				"type": "SuperPower",
+				"description": "Superman can fly anytime"
+			},
+			{
+				"id": "3",
+				"type": "SuperPower",
+				"name": "Strength",
+				"description": "Superman has a great strength."
+			}
+		]
+	},
+	{
+		"id": "4",
+		"type": "SuperHero",
+		"name": "Batman",
+		"description": "Batman does not have real super powers, but he has money and can build funny cars. He hates the Joker",
+		"powers": [{
+			"id": "5",
+			"type": "SuperPower",
+			"name": "Accessories",
+			"description": "Batman has a lot of accessories, such as the BatMobile and the BatCave."
+		}]
+	},
+	{
+		"id": "6",
+		"type": "SuperHero",
+		"name": "Spiderman",
+		"description": "Spiderman goes out every nights to arrest bad guys. He is friend with IronMan",
+		"powers": [{
+				"id": 7,
+				"type": "SuperPower",
+				"name": "Jumping",
+				"description": "It is almost like flying, but Spiderman needs to launch a spider web."
+			},
+			{
+				"id": "8",
+				"type": "SuperPower",
+				"name": "Sending spider webs",
+				"description": "Spiderman can send spider webs."
+			}
+		]
+	},
+	{
+		"id": "9",
+		"type": "SuperHero",
+		"name": "Iron Man",
+		"description": "Iron Man is like Batman: he has no real super powers, but got a lot of money",
+		"powers": [{
+				"id": "10",
+				"type": "SuperPower",
+				"name": "Accessories",
+				"description": "Iron man has a nice armour which let him fly."
+			},
+			{
+				"id": "11",
+				"type": "SuperPower",
+				"name": "Flying",
+				"description": "Thanks to his armour, Iron Man can fly"
+			}
+		]
+	}
+]

@@ -15,13 +15,13 @@ import org.springframework.stereotype.Component;
 @Component
 public class HeroBuilder {
 
-    public static final String FILENAME = "/Users/ymou/Desktop/yassine/data/heros.json";
+
     @Autowired
     private RestClientConfigHero restClientConfigHero;
 
     @Autowired
-    public static void insertData(RestClientConfigHero restClientConfigHero) {
-        JsonArray jsonArray = importJsonFile();
+    public static void insertData(RestClientConfigHero restClientConfigHero, String filePath) {
+        JsonArray jsonArray = importJsonFile(filePath);
         for (JsonValue jsonValue : jsonArray) {
             restClientConfigHero.addBulkOperation(jsonValue);
         }
@@ -29,9 +29,9 @@ public class HeroBuilder {
         restClientConfigHero.indexAllObjects();
     }
 
-    private static JsonArray importJsonFile() {
+    private static JsonArray importJsonFile(String filePath) {
         try {
-            InputStream inputStream = new FileInputStream(FILENAME);
+            InputStream inputStream = new FileInputStream(filePath);
             var jsonReader = Json.createReader(inputStream);
             return jsonReader.readArray();
         } catch (FileNotFoundException e) {
